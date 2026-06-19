@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCM Dose Calculator — Paediatric</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --border: #e4e7ed;
+    --text-primary: #1a1f2e;
+    --text-secondary: #5a6175;
+    --text-muted: #9098ad;
+    --blue: #2563eb;
+    --blue-light: #eff4ff;
+    --blue-mid: #bfcffe;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --green-mid: #bbf7d0;
+    --amber-light: #fffbeb;
+    --amber-mid: #fde68a;
+    --amber-text: #92400e;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .logo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 1rem;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .input-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .input-row input {
+    flex: 1;
+    height: 48px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    background: var(--bg);
+    width: 100%;
+  }
+
+  .input-row input:focus {
+    border-color: var(--blue);
+    background: #fff;
+  }
+
+  .input-row input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 16px;
+  }
+
+  .unit-badge {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 14px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .dose-box {
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .dose-box.min {
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+  }
+
+  .dose-box.max {
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+  }
+
+  .dose-box .box-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 6px;
+  }
+
+  .dose-box.min .box-label { color: #1d4ed8; }
+  .dose-box.max .box-label { color: #15803d; }
+
+  .dose-box .ml-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .dose-box.min .ml-value { color: var(--blue); }
+  .dose-box.max .ml-value { color: var(--green); }
+
+  .dose-box .mg-value {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .dose-box.min .mg-value { color: #3b82f6; }
+  .dose-box.max .mg-value { color: #22c55e; }
+
+  .dose-box .rate {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .dose-box.min .rate { color: #93c5fd; }
+  .dose-box.max .rate { color: #86efac; }
+
+  .syrup-info {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  .syrup-info svg {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  .syrup-info strong {
+    color: var(--text-primary);
+  }
+
+  .range-bar-wrap {
+    margin-bottom: 1.25rem;
+  }
+
+  .range-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .range-bar-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 99px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .range-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #2563eb, #16a34a);
+    transition: width 0.3s ease;
+  }
+
+  .warning-box {
+    background: var(--amber-light);
+    border: 1px solid var(--amber-mid);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--amber-text);
+    display: none;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .warning-box svg {
+    vertical-align: -3px;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+
+  .notes {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+
+  .notes li {
+    list-style: none;
+    padding-left: 18px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+
+  .notes li::before {
+    content: '·';
+    position: absolute;
+    left: 6px;
+    color: var(--text-muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 0 0.5rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state svg {
+    margin-bottom: 10px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  #results { display: none; }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 400px) {
+    .dose-box .ml-value { font-size: 26px; }
+    .card { padding: 1.25rem; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2e3d;
+      --text-primary: #f0f2f7;
+      --text-secondary: #8b93a8;
+      --text-muted: #555d72;
+      --blue-light: #0f1e3d;
+      --blue-mid: #1e3a6e;
+      --green-light: #0a1f12;
+      --green-mid: #14532d;
+      --amber-light: #1c1408;
+      --amber-mid: #78350f;
+      --amber-text: #fcd34d;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-pill">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+    Paediatric
+  </div>
+  <h1>PCM Dose Calculator</h1>
+  <p>Paracetamol suspension 125 mg/5 ml — weight-based dosing for children</p>
+</header>
+
+<div class="card">
+  <div class="input-group">
+    <label for="weight">Child's weight</label>
+    <div class="input-row">
+      <input type="number" id="weight" min="1" max="60" step="0.1" placeholder="Enter weight" autocomplete="off" oninput="calculate()">
+      <div class="unit-badge">kg</div>
+    </div>
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/>
+    </svg>
+    <p>Enter weight above to see the dose</p>
+  </div>
+
+  <div id="results">
+    <hr class="divider">
+
+    <div class="results-grid">
+      <div class="dose-box min">
+        <div class="box-label">Minimum dose</div>
+        <div class="ml-value" id="min-ml">—</div>
+        <div class="mg-value" id="min-mg">— mg</div>
+        <div class="rate">10 mg / kg</div>
+      </div>
+      <div class="dose-box max">
+        <div class="box-label">Maximum dose</div>
+        <div class="ml-value" id="max-ml">—</div>
+        <div class="mg-value" id="max-mg">— mg</div>
+        <div class="rate">15 mg / kg</div>
+      </div>
+    </div>
+
+    <div class="range-bar-wrap">
+      <div class="range-bar-label">
+        <span id="bar-min-label">min</span>
+        <span id="bar-max-label">max</span>
+      </div>
+      <div class="range-bar-track">
+        <div class="range-bar-fill" id="range-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="syrup-info">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v6m0 0c-3.3 0-6 2.7-6 6v8h12v-8c0-3.3-2.7-6-6-6Z"/>
+      </svg>
+      <span>Give <strong id="syrup-range">— to — ml</strong> of syrup per dose (125 mg / 5 ml suspension)</span>
+    </div>
+
+    <div class="warning-box" id="warning-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span id="warning-text"></span>
+    </div>
+
+    <ul class="notes">
+      <li>Repeat every <strong>4–6 hours</strong> as needed</li>
+      <li>Do not exceed <strong>4 doses</strong> in 24 hours</li>
+      <li>Shake the bottle well before measuring</li>
+      <li>Use a calibrated oral syringe, not a kitchen spoon</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  For clinical guidance only. Always confirm dosing with the treating physician.<br>
+  Burari Hospital · Paediatrics
+</footer>
+
+<script>
+function calculate() {
+  const w = parseFloat(document.getElementById('weight').value);
+  const results = document.getElementById('results');
+  const empty = document.getElementById('empty-state');
+  const warn = document.getElementById('warning-box');
+
+  if (!w || w <= 0) {
+    results.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  results.style.display = 'block';
+
+  const minMg = 10 * w;
+  const maxMg = 15 * w;
+  // 125mg/5ml = 25mg/ml
+  const minMl = minMg / 25;
+  const maxMl = maxMg / 25;
+
+  document.getElementById('min-ml').textContent = minMl.toFixed(1) + ' ml';
+  document.getElementById('max-ml').textContent = maxMl.toFixed(1) + ' ml';
+  document.getElementById('min-mg').textContent = Math.round(minMg) + ' mg';
+  document.getElementById('max-mg').textContent = Math.round(maxMg) + ' mg';
+  document.getElementById('bar-min-label').textContent = minMl.toFixed(1) + ' ml';
+  document.getElementById('bar-max-label').textContent = maxMl.toFixed(1) + ' ml';
+  document.getElementById('syrup-range').textContent = minMl.toFixed(1) + ' to ' + maxMl.toFixed(1) + ' ml';
+
+  // bar fills proportionally: min dose starts at ~40% of max
+  const pct = (minMl / maxMl) * 100;
+  document.getElementById('range-bar').style.width = pct.toFixed(0) + '%';
+
+  warn.style.display = 'none';
+  if (w < 3) {
+    warn.style.display = 'block';
+    document.getElementById('warning-text').textContent = 'Weight under 3 kg — consult a paediatrician before dosing.';
+  } else if (w > 40) {
+    warn.style.display = 'block';
+    document.getElementById('warning-text').textContent = 'Weight over 40 kg — consider adult formulation and confirm with prescriber.';
+  }
+}
+</script>
+</body>
+</html>
